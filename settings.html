@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOOK SENSOR - Paramètres</title>
+    <link id="themeStylesheet" rel="stylesheet" href="style.css">
+    <script src="raphael-2.1.4.min.js"></script>
+    <script src="justgage.js"></script>
+    <script src="script.js" defer></script>
+    <style>
+        .btn-red {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-red:hover {
+            background-color: darkred;
+        }
+
+        .alert-box {
+            background-color: transparent;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .gauge-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        #maMesure {
+            width: 350px;
+            height: 350px;
+        }
+
+        .theme-selector {
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        .theme-selector select {
+            padding: 8px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <h1>BOOK SENSOR</h1>
+        <ul class="menu">
+            <li><a href="index.html">Dashboard</a></li>
+            <li><a href="settings.html" class="active">Paramètres</a></li>
+        </ul>
+    </nav>
+
+    <div class="theme-selector">
+        <label for="themeSelect">Choisir un thème :</label>
+        <select id="themeSelect">
+            <option value="style.css">Classique</option>
+            <option value="modern_style.css">Moderne</option>
+            <option value="dark_mode_style.css">Sombre</option>
+        </select>
+    </div>
+
+    <main class="container">
+        <h2>Paramètres</h2>
+        <div class="settings-layout">
+            <div class="settings-controls">
+                <div class="settings-box">
+                    <h3>Chauffage</h3>
+                    <button id="heaterButton" class="btn">Activer chauffage</button>
+                </div>
+                <div class="settings-box">
+                    <h3>Climatisation</h3>
+                    <button id="acButton" class="btn">Activer climatisation</button>
+                </div>
+                <div class="settings-box">
+                    <h3>Réglage de la luminosité</h3>
+                    <input type="range" id="lightSlider" min="0" max="100" value="50">
+                    <p>Luminosité: <span id="lightValue">50%</span></p>
+                </div>
+                <div class="settings-box">
+                    <h3>Seuil du niveau sonore</h3>
+                    <input type="range" id="soundThresholdSlider" min="0" max="100" value="50">
+                    <p>Seuil sonore: <span id="soundThresholdValue">50%</span></p>
+                </div>
+            </div>
+            <div class="gauge-container">
+                <div id="maMesure"></div>
+            </div>
+        </div>
+
+        <div class="alert-box">
+            <h3>Alerte</h3>
+            <p>Nombre d'alertes : <span id="alertCount">0</span></p>
+            <button id="alertButton" class="btn-red">Déclencher alerte</button>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const themeSelect = document.getElementById("themeSelect");
+            const themeStylesheet = document.getElementById("themeStylesheet");
+
+
+
+            themeSelect.addEventListener("change", function () {
+                const selectedTheme = this.value;
+                themeStylesheet.href = selectedTheme;
+                localStorage.setItem("selectedTheme", selectedTheme);
+            });
+        });
+        document.getElementById("themeSelect").addEventListener("change", function () {
+            document.getElementById("themeStylesheet").setAttribute("href", this.value);
+        });
+
+        document.getElementById("lightSlider").addEventListener("input", function () {
+            document.getElementById("lightValue").innerText = this.value + "%";
+        });
+
+        document.getElementById("soundThresholdSlider").addEventListener("input", function () {
+            document.getElementById("soundThresholdValue").innerText = this.value + "%";
+        });
+        let alertCount = 0;
+        document.getElementById("alertButton").addEventListener("click", function () {
+            alertCount++;
+            document.getElementById("alertCount").innerText = alertCount;
+        });
+        document.getElementById("heaterButton").addEventListener("click", function () {
+            alert("Chauffage activé");
+        });
+
+        document.getElementById("acButton").addEventListener("click", function () {
+            alert("Climatisation activée");
+        });
+
+        let interval = 500;
+        let infoGraphe = {
+            id: "maMesure",
+            value: 0,
+            min: -20,
+            max: 70,
+            decimals: 1,
+            symbol: ' °C',
+            donut: false,
+            title: "Température",
+            label: "mesuré",
+            pointer: true,
+            pointerOptions: {
+                toplength: 10,
+                bottomlength: 5,
+                bottomwidth: 2
+            },
+            gaugeWidthScale: 0.9,
+            counter: true,
+            hideInnerShadow: true
+        };
+
+        let maMesureJG = new JustGage(infoGraphe);
+        montempslecture();
+
+        async function lecture() {
+            const reponse = await fetch("lecture.php");
+            const valeur_JSON = await reponse.json();
+
+            let result = valeur_JSON.valeur;
+            console.log(valeur_JSON);
+
+            maMesureJG.refresh(result);
+            console.log("La température est : " + result + "°C.");
+
+            if (result != null) {
+                document.getElementById("info").innerHTML = result.toFixed(2);
+            } else {
+                document.getElementById("info").innerHTML = 0;
+            }
+        }
+
+        function montempslecture() {
+            setInterval(lecture, interval);
+        }
+    </script>
+</body>
+
+</html>

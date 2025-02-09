@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOOK SENSOR - Dashboard</title>
+    <link id="themeStylesheet" rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <script src="justgage.js"></script>
+    <script src="raphael-2.1.4.min.js"></script>
+    <script src="script.js" defer></script>
+    <style>
+        .theme-selector {
+            margin: 20px auto;
+            text-align: center;
+        }
+        .theme-selector select {
+            padding: 8px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>BOOK SENSOR</h1>
+        <ul class="menu">
+            <li><a href="index.html" class="active">Dashboard</a></li>
+            <li><a href="settings.html">Paramètres</a></li>
+        </ul>
+    </nav>
+    
+    <!-- Sélecteur de thèmes -->
+    <div class="theme-selector">
+        <label for="themeSelect">Choisir un thème :</label>
+        <select id="themeSelect">
+            <option value="style.css">Classique</option>
+            <option value="modern_style.css">Moderne</option>
+            <option value="dark_mode_style.css">Sombre</option>
+        </select>
+    </div>
+    
+    <!-- Graphiques -->
+    <main class="container">
+        <h2>Tableau de bord</h2>
+        <div class="data-container">
+            <div class="data-box">
+                <h3>Température</h3>
+                <canvas id="temperatureChart"></canvas>
+            </div>
+            <div class="data-box">
+                <h3>Humidité</h3>
+                <canvas id="humidityChart"></canvas>
+            </div>
+            <div class="data-box">
+                <h3>Luminosité</h3>
+                <canvas id="lightChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Jauges -->
+        <div class="data-container">
+            <div class="data-box">
+                <div class="gauge-container">
+                    <div id="TempJauge"></div>
+                </div>
+            </div>
+
+            <div class="data-box">
+                <div class="gauge-container">
+                    <div id="HumJauge"></div>
+                </div>
+            </div>
+
+            <div class="data-box">
+                <div class="gauge-container">
+                    <div id="LumJauge"></div>
+                </div>
+            </div>
+            <div class="data-box">
+                <div class="gauge-container">
+                    <div id="SonJauge"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphiques -->
+        <div class="data-container">
+            <div class="data-box">
+                <h3>Alerte sonore</h3>
+                <div id="soundIndicator" class="indicator off"></div>
+            </div>
+            <div class="data-box" id="gasBox">
+                <h3>Présence de gaz</h3>
+                <p id="gasStatus">Non</p>
+            </div>
+            <div class="data-box" id="alarmBox">
+                <h3>Alarme</h3>
+                <p id="alertStatus">Aucune alerte</p>
+                <div id="alarmIndicator" class="indicator off"></div>
+            </div>
+        </div>
+
+        
+        <button id="refresh-data" class="btn">Rafraîchir les données</button>
+    </main>
+    
+    <script>
+        document.getElementById("themeSelect").addEventListener("change", function() {
+            document.getElementById("themeStylesheet").setAttribute("href", this.value);
+        });
+
+    </script>
+</body>
+</html>
