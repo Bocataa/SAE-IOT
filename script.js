@@ -3,6 +3,7 @@ let temperature;
 let humidite;
 let luminosite;
 let alerte;
+let niveau_sonore;
 
 // Fonction fetch all data
 async function fetchAllData() {
@@ -13,7 +14,9 @@ async function fetchAllData() {
     temperature = valeur_JSON[0].temperature;
     humidite = valeur_JSON[0].humidity;
     luminosite = valeur_JSON[0].light_level;
+    niveau_sonore = valeur_JSON[0].audio_level;
     alerte = valeur_JSON[0].alerte;
+    
 
     console.log(valeur_JSON); // DEBUG
 
@@ -23,7 +26,7 @@ async function fetchAllData() {
 
 function UpdateData(){
     TempJG.refresh(temperature); // Jauge Temperature
-    SonJG.refresh(40); // Jauge Son
+    SonJG.refresh(niveau_sonore); // Jauge Son
     HumJG.refresh(humidite); // Jauge humidite
     LumJG.refresh(luminosite); // Jauge Luminosité
 

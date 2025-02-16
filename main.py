@@ -9,6 +9,11 @@ import busio  # I2C ecran OLED
 from PIL import Image, ImageDraw, ImageFont  # écran OLED
 from rpi_ws281x import PixelStrip, Color  # Strip led
 
+# Debug affichage du repertoire de travail
+#import os
+#print(f"Répertoire de travail actuel: {os.getcwd()}")
+
+
 # GPIO
 try:
     GPIO.setmode(GPIO.BOARD)  # Numérotation broches physiques
@@ -18,14 +23,14 @@ except ValueError:
 GPIO.setwarnings(False)  # désactivation des avertissements de sécurité
 
 # Configuration des capteurs et périphériques
-MQ_pin = 18  # MQ Sensor (GAZ) GPIO24
+MQ_pin = 17  # MQ Sensor (GAZ) GPIO17
 GPIO.setup(MQ_pin, GPIO.IN)
 
-BP1 = 21  # Bouton carte principale
-GPIO.setup(BP1, GPIO.IN)
+BP_IHM = 26  # BP carte IHM GPIO 26
+LED_IHM = 19 # LED IHM GPIO 19
+GPIO.setup(BP_IHM, GPIO.IN)  # Configurer broche entrée
+GPIO.setup(LED_IHM, GPIO.OUT) # Configurer broche sortie
 
-BP_IHM = 26  # BP carte IHM
-GPIO.setup(BP_IHM, GPIO.OUT)  # Configurer broche sortie
 
 # Haut-parleur
 pwm = HardwarePWM(pwm_channel=0, hz=440, chip=0)
@@ -129,10 +134,10 @@ def read_data():
     print(htu_sensor.read_temperature)
 
     # Retourne les valeurs sous forme d'un tableau (valeurs analogiques converties en 0-5V)
-    return [value_son * 5 / 255, value_lum * 5 / 255, MQ_state, temperature, humidity]
+    return [value_son, value_lum , MQ_state, temperature, humidity]
 
 # Base de données
-emplacement_db = './serveur/database.db3'
+emplacement_db = './html/serveur/database.db3'
 
 # Fonction d'envoi des données dans la BDD
 def send_data(data):
@@ -156,10 +161,7 @@ def send_data(data):
 
         # Insertion des données
         timestamp = datetime.now()  # récupération de l'heure pour horodatage
-        cur.execute('''
-            INSERT INTO sensor_data (timestamp, smoke_presence, light_level, audio_level, temperature, humidity)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (timestamp, data[2], data[1], data[0], data[3], data[4]))
+        cur.execute('''INSERT INTO sensor_data (timestamp, smoke_presence, light_level, audio_level, temperature, humidity)VALUES (?, ?, ?, ?, ?, ?)''', (timestamp, data[2], data[1], data[0], data[3], data[4]))
 
         # Commit des changements et fermeture de la connexion à la DB
         con.commit()
