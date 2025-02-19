@@ -1,32 +1,61 @@
 // Variables globales
-let temperature;
-let humidite;
-let luminosite;
-let alerte;
+let temperature = [];
+let humidite = [];
+let luminosite = [];
+let son = [];
+let fumee = [];
+let alerte = [];
 
-// Fonction fetch all data
-async function fetchAllData() {
-    const reponse = await fetch("http://192.168.1.25:3000/all");
+
+
+// Fonction fetch all data attention sensible à utiliser quand trop de valeurs dans la base
+async function fetchAllData() { 
+    const reponse = await fetch("http://192.168.1.28:3000/all");
+    const valeur_JSON = await reponse.json();
+
+    console.log(valeur_JSON); // DEBUG
+
+}
+// Fonction fetch 5 dernières valeurs (affichage tableau)
+async function LastValue() {
+    const reponse = await fetch("http://192.168.1.28:3000/LastValue");
     const valeur_JSON = await reponse.json();
     
-    // Extraction des données de la BDD
-    temperature = valeur_JSON[0].temperature;
-    humidite = valeur_JSON[0].humidity;
-    luminosite = valeur_JSON[0].light_level;
-    alerte = valeur_JSON[0].alerte;
+    // Extraction des données de la BDD premiere valeur
+    temperature[0] = valeur_JSON[0].temperature;
+    humidite[0] = valeur_JSON[0].humidity;
+    luminosite[0] = valeur_JSON[0].light_level;
+    son[0] = valeur_JSON[0].audio_level;
+    fumee[0] = valeur_JSON[0].smoke_presence;
+    alerte[0] = valeur_JSON[0].alerte;
+    console.log(valeur_JSON); // DEBUG
+
+}
+// Fonction fetch 5 dernières valeurs (affichage tableau)
+async function fiveLast() {
+    const reponse = await fetch("http://192.168.1.28:3000/fiveLastValue");
+    const valeur_JSON = await reponse.json();
+    
+    // Boucle pour parcourir les 5 dernières valeurs et les assigner
+    for (let i = 0; i < 5; i++) {
+        temperature[i] = valeur_JSON[i].temperature;
+        humidite[i] = valeur_JSON[i].humidity;
+        luminosite[i] = valeur_JSON[i].light_level;
+        son[i] = valeur_JSON[i].audio_level;
+        fumee[i] = valeur_JSON[i].smoke_presence;
+        alerte[i] = valeur_JSON[i].alerte;
+    }
 
     console.log(valeur_JSON); // DEBUG
 
 }
 
-// Fonnction de mise à jour des données page web
-
+// Fonnction de mise à jour des dernières données mesuréespage web
 function UpdateData(){
-    TempJG.refresh(temperature); // Jauge Temperature
-    SonJG.refresh(40); // Jauge Son
-    HumJG.refresh(humidite); // Jauge humidite
-    LumJG.refresh(luminosite); // Jauge Luminosité
-
+    TempJG.refresh(temperature[0]); // Jauge Temperature
+    HumJG.refresh(humidite[0]); // Jauge humidite
+    LumJG.refresh(luminosite[0]); // Jauge Luminosité
+    SonJG.refresh(son[0]); // Jauge Son
 }
 
 // Affichage des jauges
@@ -184,5 +213,5 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-setInterval(fetchAllData, 1000);
+setInterval(fiveLast, 3000);
 setInterval(UpdateData, 500);
