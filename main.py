@@ -10,10 +10,9 @@ from PIL import Image, ImageDraw, ImageFont  # écran OLED
 from rpi_ws281x import PixelStrip, Color  # Strip led
 import threading #pour gérer les interruptions boutons
 
-# Debug affichage du repertoire de travail
+# Debug affichage du répertoire de travail
 #import os
 #print(f"Répertoire de travail actuel: {os.getcwd()}")
-
 
 # GPIO
 try:
@@ -23,16 +22,17 @@ except ValueError:
     pass
 GPIO.setwarnings(False)  # désactivation des avertissements de sécurité
 
-
 # Configuration des capteurs et périphériques
 MQ_pin = 17  # MQ Sensor (GAZ) GPIO17
 GPIO.setup(MQ_pin, GPIO.IN)
 
+relay_pin = 23
+GPIO.setup(relay_pin, GPIO.OUT) # Configurer broche sortie
+
 BP_IHM = 26  # BP carte IHM GPIO 26
 LED_IHM = 19 # LED IHM GPIO 19
-GPIO.setup(BP_IHM, GPIO.IN)  # Configurer broche entrée
+GPIO.setup(BP_IHM, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # Configurer broche entrée avec pull-down
 GPIO.setup(LED_IHM, GPIO.OUT) # Configurer broche sortie
-
 
 # Haut-parleur
 pwm = HardwarePWM(pwm_channel=0, hz=440, chip=0)
@@ -69,6 +69,8 @@ oled.show()
 # Variables globales
 running = True
 mode = 0  # 0 = heure, 1 = température/humidité, 2 = lumière, 3 = son
+sound_threshold = 50  # Seuil de déclenchement de l'alarme sonore (valeur par défaut)
+luminosity_threshold = 50  # Seuil de luminosité pour activer le relais (valeur par défaut)
 
 # HTU21D
 HTU21D_I2C_ADDRESS = 0x40
@@ -102,11 +104,10 @@ class HTU21D:
 
 # Fonction d'affichage texte écran OLED
 def display_text(msg):
-
     image = Image.new('1', (128, 64))
     draw = ImageDraw.Draw(image)
 
-     # Charger la police 
+    # Charger la police
     try:
         font = ImageFont.truetype("./html/ressources/font/font.ttf", 26)  # Remplacez par le bon chemin
     except IOError:
@@ -122,7 +123,6 @@ def display_text(msg):
 
 # Fonction de lecture des données
 def read_data():
-
     if not running:
         return 0
 
@@ -142,79 +142,66 @@ def read_data():
     temperature = htu_sensor.read_temperature()
     humidity = htu_sensor.read_humidity()
 
-<<<<<<< HEAD
-    print("capt_son: %1.2f V" % (value_son * 100 / 255))  # Affichage valeur capt_son en %
-    print("capt_lum: %1.2f V" % (value_lum * 100 / 255))  # Affichage valeur capt_lum en %
-=======
-    print("capt_son: %1.2f V" % (value_son * 5 / 255))  # Affichage valeur capt_son en %
-    print("capt_lum: %1.2f V" % (value_lum * 5 / 255))  # Affichage valeur capt_lum en %
->>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
-    print("MQ: %d" % MQ_state)  # Affichage capteur de gaz (booleen)
+    print("capt_son: %1.2f pourcent" % (value_son * 100 / 255))  # Affichage valeur capt_son en %
+    print("capt_lum: %1.2f pourcent" % (value_lum * 100 / 255))  # Affichage valeur capt_lum en %
+    print("MQ: %d" % MQ_state)  # Affichage capteur de gaz (booléen)
     print(f"Température: {temperature:.2f}°C, Humidité: {humidity:.2f}%")
 
-
-    # Retourne les valeurs sous forme d'un tableau (valeurs analogiques converties en 0-5V)
-    return [value_son, value_lum , MQ_state, temperature, humidity]
+    # Retourne les valeurs sous forme d'un tableau avec les valeurs exploitables
+    return [value_son*100/255, value_lum*100/255 , MQ_state, temperature, humidity]
 
 # Base de données
 emplacement_db = './html/serveur/database.db3'
 
 # Fonction d'envoi des données dans la BDD
-def send_data(data): # voir pour le faire tourner dans un threads pour evoyer tous les x minutes par exemple
-    while running: # si le bouton n'as pas été maintenu 5s
-            data = read_data()
-            if data[0] is not None:  
-                try:
-                    con = sqlite3.connect(emplacement_db)
-                    cur = con.cursor()
-                    cur.execute('''
-                        CREATE TABLE IF NOT EXISTS sensor_data (
-                            data_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            timestamp DATETIME,
-                            smoke_presence BOOLEAN,
-                            light_level FLOAT,
-                            audio_level FLOAT,
-                            temperature FLOAT,
-                            humidity INTEGER
-                        )
-                    ''')
-                    timestamp = datetime.now()
-                    cur.execute('''INSERT INTO sensor_data (timestamp, smoke_presence, light_level, audio_level, temperature, humidity)
-                                VALUES (?, ?, ?, ?, ?, ?)''', (timestamp, data[2], data[1], data[0], data[3], data[4]))
-                    con.commit()
-                    con.close()
-                except sqlite3.Error as db_error:
+def send_data():
+    while running:
+        data = read_data()
+        if data[0] is not None:
+            try:
+                con = sqlite3.connect(emplacement_db)
+                cur = con.cursor()
+                cur.execute('''
+                    CREATE TABLE IF NOT EXISTS sensor_data (
+                        data_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp DATETIME,
+                        smoke_presence BOOLEAN,
+                        light_level FLOAT,
+                        audio_level FLOAT,
+                        temperature FLOAT,
+                        humidity INTEGER
+                    )
+                ''')
+                timestamp = datetime.now()
+                cur.execute('''INSERT INTO sensor_data (timestamp, smoke_presence, light_level, audio_level, temperature, humidity)
+                            VALUES (?, ?, ?, ?, ?, ?)''', (timestamp, data[2], data[1], data[0], data[3], data[4]))
+                con.commit()
+                con.close()
+            except sqlite3.Error as db_error:
+                with open("log.txt", "a") as log_file: # On sauvegarde les erreurs dans un fichier de logs
+                    log_file.write(f"{datetime.now()} - {str(db_error)}\n")
+        time.sleep(10)  # Envoi des données toutes les 10 secondes
 
-                    with open("log.txt", "a") as log_file: # On sauvegarde les erreurs dans un fichier de logs
-                        log_file.write(f"{datetime.now()} - {str(db_error)}\n")
-
-
-<<<<<<< HEAD
-
-=======
-n_mode = 4
->>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
 # Fonction de gestion du bouton IHM
 def button_handler(channel):
     global mode, running
 
     press_time = time.time()
-    while GPIO.input(BP_IHM) == GPIO.LOW:  
+    while GPIO.input(BP_IHM) == GPIO.HIGH:
         if time.time() - press_time > 5:  # Appui long
             running = False
             GPIO.output(LED_IHM, GPIO.LOW)
             display_text("System OFF")
+            fade_leds()
             return
-    
+
     # Changement de mode si appui court
-<<<<<<< HEAD
     mode = (mode + 1) % 4
-=======
-    mode = (mode + 1) % n_mode
->>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
+    update_display()
 
 # Fonction de mise à jour de l'affichage et des LEDs
 def update_display_and_leds():
+    global sound_threshold, luminosity_threshold
     while running:
         data = read_data()
 
@@ -223,22 +210,19 @@ def update_display_and_leds():
             color = Color(0, 255, 0)  # Vert par défaut pour température
         elif mode == 1:
             display_text(f"Temp: {data[3]:.1f}C\nHum: {data[4]}%")
-<<<<<<< HEAD
             color = Color(255, 0, 0)  # Rouge pour température
         elif mode == 2:
             display_text(f"Lum: {data[1]:.2f}V")
             color = Color(0, 0, 255)  # Bleu pour lumière
         elif mode == 3:
             display_text(f"Son: {data[0]:.2f}V")
-=======
-            color = Color(255, 0, 0)  
-        elif mode == 2:
-            display_text(f"Lum: {data[1]:.2f}%")
-            color = Color(0, 0, 255)  # Bleu pour lumière
-        elif mode == 3:
-            display_text(f"Son: {data[0]:.2f}%")
->>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
             color = Color(255, 255, 0)  # Jaune pour son
+
+        # Mise à jour de la bande LED en fonction des niveaux
+        if mode == 1:
+            color = Color(int(data[3] * 2.55), 0, int(255 - data[3] * 2.55))  # Dégradé rouge-bleu pour température
+        elif mode == 2:
+            color = Color(0, int(data[4] * 2.55), int(255 - data[4] * 2.55))  # Dégradé vert-bleu pour humidité
 
         # Mise à jour de la bande LED
         strip.setPixelColor(0, color)
@@ -246,23 +230,74 @@ def update_display_and_leds():
         strip.show()
         GPIO.output(LED_IHM, GPIO.HIGH)  # Active la LED
 
+        # Vérification des seuils
+        if data[0] * 100 / 255 > sound_threshold:
+            pwm.start(100)  # Déclencher l'alarme sonore
+        else:
+            pwm.stop()
+
+        if data[1] * 100 / 255 < luminosity_threshold:
+            GPIO.output(relay_pin, GPIO.HIGH)  # Activer le relais
+        else:
+            GPIO.output(relay_pin, GPIO.LOW)  # Désactiver le relais
+
         time.sleep(1)
 
+# Fonction pour mettre à jour l'affichage en fonction du mode
+def update_display():
+    data = read_data()
+    if mode == 0:
+        display_text(datetime.now().strftime("%H:%M:%S"))
+    elif mode == 1:
+        display_text(f"Temp: {data[3]:.1f}C\nHum: {data[4]}%")
+    elif mode == 2:
+        display_text(f"Lum: {data[1]:.2f}V")
+    elif mode == 3:
+        display_text(f"Son: {data[0]:.2f}V")
+
+# Fonction pour l'effet de fondu progressif des LEDs
+def fade_leds():
+    for brightness in range(255, -1, -5):
+        color = Color(brightness, brightness, brightness)
+        strip.setPixelColor(0, color)
+        strip.setPixelColor(1, color)
+        strip.show()
+        time.sleep(0.05)
+    strip.setPixelColor(0, Color(0, 0, 0))
+    strip.setPixelColor(1, Color(0, 0, 0))
+    strip.show()
+
+# Animation de démarrage
+def startup_animation():
+    colors = [Color(255, 0, 0), Color(0, 255, 0), Color(0, 0, 255)]
+    for _ in range(3):
+        for color in colors:
+            strip.setPixelColor(0, color)
+            strip.setPixelColor(1, color)
+            strip.show()
+            time.sleep(0.5)
+    strip.setPixelColor(0, Color(0, 0, 0))
+    strip.setPixelColor(1, Color(0, 0, 0))
+    strip.show()
+
 # Détection des interruptions du bouton
-#GPIO.add_event_detect(BP_IHM, GPIO.RISING, callback=button_handler, bouncetime=300)
+try: # Pour ne pas faire crash le programme en cas d erreur
+    GPIO.add_event_detect(BP_IHM, GPIO.RISING, callback=button_handler, bouncetime=300) 
+except RuntimeError as e:
+    print(f"Erreur lors de l'ajout de la détection d'événement: {e}")
 
 # Lancement des threads pour l'affichage et l'envoi de données
 threading.Thread(target=update_display_and_leds, daemon=True).start()
-#threading.Thread(target=send_data, daemon=True).start()
+threading.Thread(target=send_data, daemon=True).start()
+
+# Animation de démarrage
+startup_animation()
 
 # Boucle principale
 try:
     while True:
-        data = read_data()
-        send_data(data)
-        time.sleep(3)
+        time.sleep(1)
 except KeyboardInterrupt:
     pass
 finally:
     GPIO.cleanup()
-

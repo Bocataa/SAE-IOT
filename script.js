@@ -1,36 +1,28 @@
 // Variables globales
-<<<<<<< HEAD
 let temperature = [];
 let humidite = [];
 let luminosite = [];
 let son = [];
 let fumee = [];
 let alerte = [];
-=======
-let temperature;
-let humidite;
-let luminosite;
-let alerte;
-let niveau_sonore;
->>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
 
-
+let tempData = []; // Pour graphique
+let humData = []; // Pour Graphique
+let lightData = []; //Pour Graphique
 
 // Fonction fetch all data attention sensible à utiliser quand trop de valeurs dans la base
-async function fetchAllData() { 
+async function fetchAllData() {
     const reponse = await fetch("http://192.168.1.28:3000/all");
     const valeur_JSON = await reponse.json();
-
     console.log(valeur_JSON); // DEBUG
-
 }
+
 // Fonction fetch 5 dernières valeurs (affichage tableau)
 async function LastValue() {
-    const reponse = await fetch("http://192.168.1.28:3000/LastValue");
+    const reponse = await fetch("http://192.168.1.25:3000/LastValue");
     const valeur_JSON = await reponse.json();
-    
-<<<<<<< HEAD
-    // Extraction des données de la BDD premiere valeur
+
+    // Extraction des données de la BDD première valeur
     temperature[0] = valeur_JSON[0].temperature;
     humidite[0] = valeur_JSON[0].humidity;
     luminosite[0] = valeur_JSON[0].light_level;
@@ -38,13 +30,13 @@ async function LastValue() {
     fumee[0] = valeur_JSON[0].smoke_presence;
     alerte[0] = valeur_JSON[0].alerte;
     console.log(valeur_JSON); // DEBUG
-
 }
+
 // Fonction fetch 5 dernières valeurs (affichage tableau)
 async function fiveLast() {
-    const reponse = await fetch("http://192.168.1.28:3000/fiveLastValue");
+    const reponse = await fetch("http://192.168.1.25:3000/fiveLastValue");
     const valeur_JSON = await reponse.json();
-    
+
     // Boucle pour parcourir les 5 dernières valeurs et les assigner
     for (let i = 0; i < 5; i++) {
         temperature[i] = valeur_JSON[i].temperature;
@@ -54,184 +46,213 @@ async function fiveLast() {
         fumee[i] = valeur_JSON[i].smoke_presence;
         alerte[i] = valeur_JSON[i].alerte;
     }
-=======
-    // Extraction des données de la BDD
-    temperature = valeur_JSON[0].temperature;
-    humidite = valeur_JSON[0].humidity;
-    luminosite = valeur_JSON[0].light_level;
-    niveau_sonore = valeur_JSON[0].audio_level;
-    alerte = valeur_JSON[0].alerte;
-    
->>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
+
+    // Mise à jour des données des graphiques
+    tempData = temperature.slice();
+    humData = humidite.slice();
+    lightData = luminosite.slice();
+
+    // Mise à jour des graphiques
+    temperatureChart.data.datasets[0].data = tempData;
+    humidityChart.data.datasets[0].data = humData;
+    lightChart.data.datasets[0].data = lightData;
+
+    // Actualiser les graphiques
+    temperatureChart.update();
+    humidityChart.update();
+    lightChart.update();
 
     console.log(valeur_JSON); // DEBUG
-
 }
 
-// Fonnction de mise à jour des dernières données mesuréespage web
-function UpdateData(){
-<<<<<<< HEAD
+// Fonction de mise à jour des dernières données mesurées page web Jauges
+function UpdateData() {
     TempJG.refresh(temperature[0]); // Jauge Temperature
     HumJG.refresh(humidite[0]); // Jauge humidite
     LumJG.refresh(luminosite[0]); // Jauge Luminosité
     SonJG.refresh(son[0]); // Jauge Son
-=======
-    TempJG.refresh(temperature); // Jauge Temperature
-    SonJG.refresh(niveau_sonore); // Jauge Son
-    HumJG.refresh(humidite); // Jauge humidite
-    LumJG.refresh(luminosite); // Jauge Luminosité
-
->>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
 }
 
 // Affichage des jauges
 
-    // Temperature
-    let infoTempJG = {
-        id: "TempJauge",
-        value: 0,
-        min: -20,
-        max: 70,
-        decimals: 1,
-        symbol: ' °C',
-        donut: false,
-        title: "Température",
-        label: "mesuré",
-        pointer: true,
-        pointerOptions: {
-            toplength: 10,
-            bottomlength: 5,
-            bottomwidth: 2
+// Temperature
+let infoTempJG = {
+    id: "TempJauge",
+    value: 0,
+    min: -20,
+    max: 60,
+    decimals: 1,
+    symbol: ' °C',
+    donut: false,
+    title: "Température",
+    label: "mesuré",
+    pointer: true,
+    pointerOptions: {
+        toplength: 10,
+        bottomlength: 5,
+        bottomwidth: 2
+    },
+    gaugeWidthScale: 0.9,
+    counter: true,
+    hideInnerShadow: true,
+    customSectors: [
+        {
+            color: "#93fff7", // Permet de changer les couleurs selon les valeurs | BLEU
+            lo: -20,            // On veut du bleu pour froid, vert OK et rouge chaud
+            hi: 17
         },
-        gaugeWidthScale: 0.9,
-        counter: true,
-        hideInnerShadow: true
-    };
-
-    let TempJG = new JustGage(infoTempJG);
-
-    // Humidite
-    let infoHumJG = {
-        id: "HumJauge",
-        value: 0,
-        min: 0,
-        max: 100,
-        decimals: 1,
-        symbol: ' %',
-        donut: false,
-        title: "Humidité",
-        label: "mesuré",
-        pointer: true,
-        pointerOptions: {
-            toplength: 10,
-            bottomlength: 5,
-            bottomwidth: 2
+        {
+            color: "#00ff00", // VERT
+            lo: 17,
+            hi: 25
         },
-        gaugeWidthScale: 0.9,
-        counter: true,
-        hideInnerShadow: true
-    };
+        {
+            color: "#00FF00", // ROUGE
+            lo: 25,
+            hi: 60
+        }
+    ]
+};
 
-    let HumJG = new JustGage(infoHumJG);
+let TempJG = new JustGage(infoTempJG);
 
-    
+// Humidite
+let infoHumJG = {
+    id: "HumJauge",
+    value: 0,
+    min: 0,
+    max: 100,
+    decimals: 1,
+    symbol: ' %',
+    donut: false,
+    title: "Humidité",
+    label: "mesuré",
+    pointer: true,
+    pointerOptions: {
+        toplength: 10,
+        bottomlength: 5,
+        bottomwidth: 2
+    },
+    gaugeWidthScale: 0.9,
+    counter: true,
+    hideInnerShadow: true
+};
 
-    // Luminosite
-    let infoLumJG = {
-        id: "LumJauge",
-        value: 0,
-        min: 0,
-        max: 100,
-        decimals: 1,
-        symbol: ' %',
-        donut: false,
-        title: "Luminosité",
-        label: "mesuré",
-        pointer: true,
-        pointerOptions: {
-            toplength: 10,
-            bottomlength: 5,
-            bottomwidth: 2
+let HumJG = new JustGage(infoHumJG);
+
+// Luminosite
+let infoLumJG = {
+    id: "LumJauge",
+    value: 0,
+    min: 0,
+    max: 100,
+    decimals: 1,
+    symbol: ' %',
+    donut: false,
+    title: "Luminosité",
+    label: "mesuré",
+    pointer: true,
+    pointerOptions: {
+        toplength: 10,
+        bottomlength: 5,
+        bottomwidth: 2
+    },
+    gaugeWidthScale: 0.9,
+    counter: true,
+    hideInnerShadow: true,
+    customSectors: [
+        {
+            color: "#FF0000", // Permet de changer les couleurs selon les valeurs
+            lo: 0,            // On veut du vert à 100% et du rouge à 0 mais c'est l'inverse par défaut
+            hi: 40
         },
-        gaugeWidthScale: 0.9,
-        counter: true,
-        hideInnerShadow: true
-    };
-
-    let LumJG = new JustGage(infoLumJG);
-
-    
-
-    // Niveau Sonore
-    let infoSonJG = {
-        id: "SonJauge",
-        value: 0,
-        min: 0,
-        max: 100,
-        decimals: 1,
-        symbol: ' %',
-        donut: false,
-        title: "Niveau Sonore",
-        label: "mesuré",
-        pointer: true,
-        pointerOptions: {
-            toplength: 10,
-            bottomlength: 5,
-            bottomwidth: 2
+        {
+            color: "#FFFF00",
+            lo: 40,
+            hi: 60
         },
-        gaugeWidthScale: 0.9,
-        counter: true,
-        hideInnerShadow: true
-    };
+        {
+            color: "#00FF00",
+            lo: 60,
+            hi: 100
+        }
+    ]
+};
 
-    let SonJG = new JustGage(infoSonJG);
+let LumJG = new JustGage(infoLumJG);
 
-    // On initialise à 0 toutes les jauges
-    TempJG.refresh(0); // Jauge Temperature
-    SonJG.refresh(0); // Jauge Son
-    HumJG.refresh(0); // Jauge humidite
-    LumJG.refresh(0); // Jauge Luminosité
+// Niveau Sonore
+let infoSonJG = {
+    id: "SonJauge",
+    value: 0,
+    min: 0,
+    max: 100,
+    decimals: 1,
+    symbol: ' %',
+    donut: false,
+    title: "Niveau Sonore",
+    label: "mesuré",
+    pointer: true,
+    pointerOptions: {
+        toplength: 10,
+        bottomlength: 5,
+        bottomwidth: 2
+    },
+    gaugeWidthScale: 0.9,
+    counter: true,
+    hideInnerShadow: true
+};
+
+let SonJG = new JustGage(infoSonJG);
+
+// On initialise à 0 toutes les jauges
+TempJG.refresh(0); // Jauge Temperature
+SonJG.refresh(0); // Jauge Son
+HumJG.refresh(0); // Jauge humidite
+LumJG.refresh(0); // Jauge Luminosité
 
 // Affichage des graphiques
 
+// Initialisation des graphiques
 document.addEventListener("DOMContentLoaded", function() {
     const ctxTemp = document.getElementById("temperatureChart").getContext("2d");
     const ctxHum = document.getElementById("humidityChart").getContext("2d");
     const ctxLight = document.getElementById("lightChart").getContext("2d");
 
-    new Chart(ctxTemp, {
+    // Créer les graphiques avec des données initiales
+    window.temperatureChart = new Chart(ctxTemp, {
         type: "line",
         data: {
-            labels: ["1", "2", "3", "4", "5"],
+            labels: ["1", "2", "3", "4", "5"], // Labels fixes pour l'exemple
             datasets: [{
                 label: "Température",
-                data: [22, 24, 23, 25, 26],
+                data: tempData, // Données stockées
                 borderColor: "red",
                 borderWidth: 2
             }]
         }
     });
 
-    new Chart(ctxHum, {
+    window.humidityChart = new Chart(ctxHum, {
         type: "line",
         data: {
-            labels: ["1", "2", "3", "4", "5"],
+            labels: ["1", "2", "3", "4", "5"], // Labels fixes pour l'exemple
             datasets: [{
                 label: "Humidité",
-                data: [50, 52, 55, 57, 60],
+                data: humData, // Données stockées
                 borderColor: "blue",
                 borderWidth: 2
             }]
         }
     });
 
-    new Chart(ctxLight, {
+    window.lightChart = new Chart(ctxLight, {
         type: "line",
         data: {
-            labels: ["1", "2", "3", "4", "5"],
+            labels: ["1", "2", "3", "4", "5"], // Labels fixes pour l'exemple
             datasets: [{
                 label: "Luminosité",
-                data: [300, 320, 310, 330, 340],
+                data: lightData, // Données stockées
                 borderColor: "yellow",
                 borderWidth: 2
             }]
