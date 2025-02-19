@@ -142,8 +142,13 @@ def read_data():
     temperature = htu_sensor.read_temperature()
     humidity = htu_sensor.read_humidity()
 
+<<<<<<< HEAD
     print("capt_son: %1.2f V" % (value_son * 100 / 255))  # Affichage valeur capt_son en %
     print("capt_lum: %1.2f V" % (value_lum * 100 / 255))  # Affichage valeur capt_lum en %
+=======
+    print("capt_son: %1.2f V" % (value_son * 5 / 255))  # Affichage valeur capt_son en %
+    print("capt_lum: %1.2f V" % (value_lum * 5 / 255))  # Affichage valeur capt_lum en %
+>>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
     print("MQ: %d" % MQ_state)  # Affichage capteur de gaz (booleen)
     print(f"Température: {temperature:.2f}°C, Humidité: {humidity:.2f}%")
 
@@ -184,7 +189,11 @@ def send_data(data): # voir pour le faire tourner dans un threads pour evoyer to
                         log_file.write(f"{datetime.now()} - {str(db_error)}\n")
 
 
+<<<<<<< HEAD
 
+=======
+n_mode = 4
+>>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
 # Fonction de gestion du bouton IHM
 def button_handler(channel):
     global mode, running
@@ -198,7 +207,11 @@ def button_handler(channel):
             return
     
     # Changement de mode si appui court
+<<<<<<< HEAD
     mode = (mode + 1) % 4
+=======
+    mode = (mode + 1) % n_mode
+>>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
 
 # Fonction de mise à jour de l'affichage et des LEDs
 def update_display_and_leds():
@@ -210,12 +223,21 @@ def update_display_and_leds():
             color = Color(0, 255, 0)  # Vert par défaut pour température
         elif mode == 1:
             display_text(f"Temp: {data[3]:.1f}C\nHum: {data[4]}%")
+<<<<<<< HEAD
             color = Color(255, 0, 0)  # Rouge pour température
         elif mode == 2:
             display_text(f"Lum: {data[1]:.2f}V")
             color = Color(0, 0, 255)  # Bleu pour lumière
         elif mode == 3:
             display_text(f"Son: {data[0]:.2f}V")
+=======
+            color = Color(255, 0, 0)  
+        elif mode == 2:
+            display_text(f"Lum: {data[1]:.2f}%")
+            color = Color(0, 0, 255)  # Bleu pour lumière
+        elif mode == 3:
+            display_text(f"Son: {data[0]:.2f}%")
+>>>>>>> d517d16e71832fe45c71d164579097fb0bfaf750
             color = Color(255, 255, 0)  # Jaune pour son
 
         # Mise à jour de la bande LED
