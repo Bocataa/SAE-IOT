@@ -1,38 +1,34 @@
-import RPi.GPIO as GPIO  # GPIO pour Raspberry Pi
-import smbus  # bibliothèque pour capteurs
+from gpiozero import Button, LED, DigitalOutputDevice
+from gpiozero.pins.rpigpio import RPiGPIOFactory
+import smbus
 import time
-import sqlite3  # utilitaires
-from datetime import datetime  # timestamp
-from rpi_hardware_pwm import HardwarePWM  # PWM Pour le haut-parleur
-import adafruit_ssd1306  # écran OLED
-import busio  # I2C ecran OLED
-from PIL import Image, ImageDraw, ImageFont  # écran OLED
-from rpi_ws281x import PixelStrip, Color  # Strip led
-import threading #pour gérer les interruptions boutons
+import sqlite3
+from datetime import datetime
+from rpi_hardware_pwm import HardwarePWM
+import adafruit_ssd1306
+import busio
+from PIL import Image, ImageDraw, ImageFont
+from rpi_ws281x import PixelStrip, Color
+import threading
 
 # Debug affichage du répertoire de travail
 #import os
 #print(f"Répertoire de travail actuel: {os.getcwd()}")
 
-# GPIO
-try:
-    GPIO.setmode(GPIO.BOARD)  # Numérotation broches physiques
-except ValueError:
-    # GPIO déjà initialisé, alors on ne fait rien, évite des erreurs "already been defined"
-    pass
-GPIO.setwarnings(False)  # désactivation des avertissements de sécurité
+# Forcer l'utilisation de RPi.GPIO
+RPiGPIOFactory()
 
 # Configuration des capteurs et périphériques
 MQ_pin = 17  # MQ Sensor (GAZ) GPIO17
-GPIO.setup(MQ_pin, GPIO.IN)
+mq_sensor = Button(MQ_pin) #Utiliser comme une entrée so
 
 relay_pin = 23
-GPIO.setup(relay_pin, GPIO.OUT) # Configurer broche sortie
+relay = DigitalOutputDevice(relay_pin)
 
 BP_IHM = 26  # BP carte IHM GPIO 26
 LED_IHM = 19 # LED IHM GPIO 19
-GPIO.setup(BP_IHM, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # Configurer broche entrée avec pull-down
-GPIO.setup(LED_IHM, GPIO.OUT) # Configurer broche sortie
+button = Button(BP_IHM, pull_up=False)
+led_ihm = LED(LED_IHM)
 
 # Haut-parleur
 pwm = HardwarePWM(pwm_channel=0, hz=440, chip=0)
@@ -70,7 +66,7 @@ oled.show()
 running = True
 mode = 0  # 0 = heure, 1 = température/humidité, 2 = lumière, 3 = son
 sound_threshold = 50  # Seuil de déclenchement de l'alarme sonore (valeur par défaut)
-luminosity_threshold = 50  # Seuil de luminosité pour activer le relais (valeur par défaut)
+luminosity_threshold = 60  # Seuil de luminosité pour activer le relais (valeur par défaut)
 
 # HTU21D
 HTU21D_I2C_ADDRESS = 0x40
@@ -109,7 +105,7 @@ def display_text(msg):
 
     # Charger la police
     try:
-        font = ImageFont.truetype("./html/ressources/font/font.ttf", 26)  # Remplacez par le bon chemin
+        font = ImageFont.truetype("/home/geii/html/ressources/font/font.ttf", 26)  # Chemin de la font
     except IOError:
         font = ImageFont.load_default()  # Si la police ne se charge pas, utiliser la police par défaut
         #print('erreur de chargement de la police') # debug
@@ -124,7 +120,7 @@ def display_text(msg):
 # Fonction de lecture des données
 def read_data():
     if not running:
-        return 0
+        return [0, 0, 0, 0, 0]  # Retourner une liste par défaut si running est False
 
     bus.write_byte(addresse, capt_son)  # directive: lire l'entrée A0
     value_son = bus.read_byte(addresse)  # lecture du résultat
@@ -133,7 +129,7 @@ def read_data():
     value_lum = bus.read_byte(addresse)  # lecture du résultat
 
     # Gaz sensor
-    MQ_state = GPIO.input(MQ_pin)  # lit l'état du capteur MQ (GAZ et Fumée)
+    MQ_state = mq_sensor.value  # lit l'état du capteur MQ (GAZ et Fumée)
 
     # HTU21D
     htu_sensor = HTU21D()
@@ -145,19 +141,19 @@ def read_data():
     print("capt_son: %1.2f pourcent" % (value_son * 100 / 255))  # Affichage valeur capt_son en %
     print("capt_lum: %1.2f pourcent" % (value_lum * 100 / 255))  # Affichage valeur capt_lum en %
     print("MQ: %d" % MQ_state)  # Affichage capteur de gaz (booléen)
-    print(f"Température: {temperature:.2f}°C, Humidité: {humidity:.2f}%")
+    print(f"Temperature: {temperature:.2f} C, Humidite: {humidity:.2f} %")
 
     # Retourne les valeurs sous forme d'un tableau avec les valeurs exploitables
     return [value_son*100/255, value_lum*100/255 , MQ_state, temperature, humidity]
 
 # Base de données
-emplacement_db = './html/serveur/database.db3'
+emplacement_db = '/home/geii/html/serveur/database.db3'
 
 # Fonction d'envoi des données dans la BDD
 def send_data():
     while running:
         data = read_data()
-        if data[0] is not None:
+        if data[0] is not None: #si on a bien une mesure
             try:
                 con = sqlite3.connect(emplacement_db)
                 cur = con.cursor()
@@ -177,23 +173,23 @@ def send_data():
                             VALUES (?, ?, ?, ?, ?, ?)''', (timestamp, data[2], data[1], data[0], data[3], data[4]))
                 con.commit()
                 con.close()
-            except sqlite3.Error as db_error:
-                with open("log.txt", "a") as log_file: # On sauvegarde les erreurs dans un fichier de logs
-                    log_file.write(f"{datetime.now()} - {str(db_error)}\n")
-        time.sleep(10)  # Envoi des données toutes les 10 secondes
+            except sqlite3.Error as db_error: # pour la maintenance
+                print(f"error: {db_error}")
+        time.sleep(5)  # Envoi des données toutes les 5 secondes
 
 # Fonction de gestion du bouton IHM
-def button_handler(channel):
+def button_handler():
     global mode, running
 
     press_time = time.time()
-    while GPIO.input(BP_IHM) == GPIO.HIGH:
-        if time.time() - press_time > 5:  # Appui long
+    while button.is_pressed:
+        if (time.time() - press_time > 3):  # Appui long
             running = False
-            GPIO.output(LED_IHM, GPIO.LOW)
+            pwm.stop()
+            led_ihm.off()
             display_text("System OFF")
             fade_leds()
-            return
+
 
     # Changement de mode si appui court
     mode = (mode + 1) % 4
@@ -209,13 +205,13 @@ def update_display_and_leds():
             display_text(datetime.now().strftime("%H:%M:%S"))
             color = Color(0, 255, 0)  # Vert par défaut pour température
         elif mode == 1:
-            display_text(f"Temp: {data[3]:.1f}C\nHum: {data[4]}%")
+            display_text(f"Temp: {data[3]:.1f}C\nHum: {data[4]:.1f}%")
             color = Color(255, 0, 0)  # Rouge pour température
         elif mode == 2:
-            display_text(f"Lum: {data[1]:.2f}V")
+            display_text(f"Lum: {data[1]:.2f}%")
             color = Color(0, 0, 255)  # Bleu pour lumière
         elif mode == 3:
-            display_text(f"Son: {data[0]:.2f}V")
+            display_text(f"Son: {data[0]:.2f}%")
             color = Color(255, 255, 0)  # Jaune pour son
 
         # Mise à jour de la bande LED en fonction des niveaux
@@ -228,18 +224,19 @@ def update_display_and_leds():
         strip.setPixelColor(0, color)
         strip.setPixelColor(1, color)
         strip.show()
-        GPIO.output(LED_IHM, GPIO.HIGH)  # Active la LED
+        led_ihm.on()  # Active la LED
 
         # Vérification des seuils
-        if data[0] * 100 / 255 > sound_threshold:
-            pwm.start(100)  # Déclencher l'alarme sonore
+        if (data[0]  > sound_threshold) or (data[2] == 1): # On déclenche l'alarme si on dépasse le seuil son ou si on détecte du gaz
+            pwm.start(50)  # Déclencher l'alarme sonore
+            time.sleep(1)
         else:
             pwm.stop()
 
-        if data[1] * 100 / 255 < luminosity_threshold:
-            GPIO.output(relay_pin, GPIO.HIGH)  # Activer le relais
+        if data[1]  < luminosity_threshold: # Active le relais si on est inférieur au seuil de luminosité (Lumière)
+            relay.off()  # Activer le relais
         else:
-            GPIO.output(relay_pin, GPIO.LOW)  # Désactiver le relais
+            relay.on()  # Désactiver le relais
 
         time.sleep(1)
 
@@ -249,11 +246,11 @@ def update_display():
     if mode == 0:
         display_text(datetime.now().strftime("%H:%M:%S"))
     elif mode == 1:
-        display_text(f"Temp: {data[3]:.1f}C\nHum: {data[4]}%")
+        display_text(f"Temp: {data[3]:.1f}C\nHum: {data[4]:.1f}%")
     elif mode == 2:
-        display_text(f"Lum: {data[1]:.2f}V")
+        display_text(f"Lum: {data[1]:.2f}%")
     elif mode == 3:
-        display_text(f"Son: {data[0]:.2f}V")
+        display_text(f"Son: {data[0]:.2f}%")
 
 # Fonction pour l'effet de fondu progressif des LEDs
 def fade_leds():
@@ -281,10 +278,7 @@ def startup_animation():
     strip.show()
 
 # Détection des interruptions du bouton
-try: # Pour ne pas faire crash le programme en cas d erreur
-    GPIO.add_event_detect(BP_IHM, GPIO.RISING, callback=button_handler, bouncetime=300) 
-except RuntimeError as e:
-    print(f"Erreur lors de l'ajout de la détection d'événement: {e}")
+button.when_pressed = button_handler
 
 # Lancement des threads pour l'affichage et l'envoi de données
 threading.Thread(target=update_display_and_leds, daemon=True).start()
@@ -300,4 +294,5 @@ try:
 except KeyboardInterrupt:
     pass
 finally:
-    GPIO.cleanup()
+    led_ihm.off()
+    relay.off()

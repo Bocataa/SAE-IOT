@@ -145,51 +145,7 @@
             alert("Climatisation activée");
         });
 
-        let interval = 500;
-        let infoGraphe = {
-            id: "maMesure",
-            value: 0,
-            min: -20,
-            max: 70,
-            decimals: 1,
-            symbol: ' °C',
-            donut: false,
-            title: "Température",
-            label: "mesuré",
-            pointer: true,
-            pointerOptions: {
-                toplength: 10,
-                bottomlength: 5,
-                bottomwidth: 2
-            },
-            gaugeWidthScale: 0.9,
-            counter: true,
-            hideInnerShadow: true
-        };
 
-        let maMesureJG = new JustGage(infoGraphe);
-        montempslecture();
-
-        async function lecture() {
-            const reponse = await fetch("lecture.php");
-            const valeur_JSON = await reponse.json();
-
-            let result = valeur_JSON.valeur;
-            console.log(valeur_JSON);
-
-            maMesureJG.refresh(result);
-            console.log("La température est : " + result + "°C.");
-
-            if (result != null) {
-                document.getElementById("info").innerHTML = result.toFixed(2);
-            } else {
-                document.getElementById("info").innerHTML = 0;
-            }
-        }
-
-        function montempslecture() {
-            setInterval(lecture, interval);
-        }
     </script>
 </body>
 

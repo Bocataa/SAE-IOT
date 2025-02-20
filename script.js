@@ -19,7 +19,7 @@ async function fetchAllData() {
 
 // Fonction fetch 5 dernières valeurs (affichage tableau)
 async function LastValue() {
-    const reponse = await fetch("http://192.168.1.25:3000/LastValue");
+    const reponse = await fetch("http://192.168.1.28:3000/LastValue");
     const valeur_JSON = await reponse.json();
 
     // Extraction des données de la BDD première valeur
@@ -34,7 +34,7 @@ async function LastValue() {
 
 // Fonction fetch 5 dernières valeurs (affichage tableau)
 async function fiveLast() {
-    const reponse = await fetch("http://192.168.1.25:3000/fiveLastValue");
+    const reponse = await fetch("http://192.168.1.28:3000/fiveLastValue");
     const valeur_JSON = await reponse.json();
 
     // Boucle pour parcourir les 5 dernières valeurs et les assigner
