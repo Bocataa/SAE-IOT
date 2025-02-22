@@ -58,9 +58,15 @@ body {
     margin-bottom: 20px;
 }
 
-.alert-box {
-    background: #ffcccc;
+.data-box-gaz {
+    width: 50%;
+    background: #e3e3e3;
+    padding: 15px;
+    border-radius: 5px;
+    text-align: center;
+    margin-bottom: 20px;
 }
+
 
 .btn {
     display: block;
@@ -75,6 +81,29 @@ body {
     margin-top: 20px;
 }
 
-.btn:hover {
-    background-color: #218838;
+
+/* Conteneur principal du statut de gaz */
+#gasStatus, #relaisStatus {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    padding: 15px;
+    border-radius: 8px;
+    width: 100%;
+    transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
 }
+
+
+/* Fond vert si pas de gaz */
+.gas-safe {
+    background-color: #3da728; /* Vert */
+    color: white;;
+}
+
+/* Fond rouge si présence de gaz */
+.gas-danger {
+    background-color: #dc3545; /* Rouge */
+    color: white;
+}
+
+

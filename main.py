@@ -1,19 +1,24 @@
-from gpiozero import Button, LED, DigitalOutputDevice
-from gpiozero.pins.rpigpio import RPiGPIOFactory
-import smbus
-import time
-import sqlite3
-from datetime import datetime
-from rpi_hardware_pwm import HardwarePWM
-import adafruit_ssd1306
-import busio
-from PIL import Image, ImageDraw, ImageFont
-from rpi_ws281x import PixelStrip, Color
-import threading
+from flask import Flask, render_template, request, jsonify # serveur Flask pour gérer les paramètres utilisateur
+from flask_cors import CORS # évite les erreurs cross origine
+from gpiozero import Button, LED, DigitalOutputDevice # Utilisation des gpio
+from gpiozero.pins.rpigpio import RPiGPIOFactory 
+import smbus # I2C CAN
+import time #chrono, sleep ...
+import sqlite3 # Base de donnée
+from datetime import datetime # timestamp
+from rpi_hardware_pwm import HardwarePWM # Utilisation de PWM pour le haut parleur
+import adafruit_ssd1306 # Ecran OLED
+import busio # I2C ecran OLED
+from PIL import Image, ImageDraw, ImageFont # ecran OLED
+from rpi_ws281x import PixelStrip, Color # STRIP LED
+import threading # thread
 
 # Debug affichage du répertoire de travail
 #import os
 #print(f"Répertoire de travail actuel: {os.getcwd()}")
+
+app = Flask(__name__)
+CORS(app) # pour eviter les erreurs de sécurité sur les routes
 
 # Forcer l'utilisation de RPi.GPIO
 RPiGPIOFactory()
@@ -27,7 +32,7 @@ relay = DigitalOutputDevice(relay_pin)
 
 BP_IHM = 26  # BP carte IHM GPIO 26
 LED_IHM = 19 # LED IHM GPIO 19
-button = Button(BP_IHM, pull_up=False)
+button = Button(BP_IHM, pull_up=False, bounce_time=0.05)
 led_ihm = LED(LED_IHM)
 
 # Haut-parleur
@@ -67,6 +72,8 @@ running = True
 mode = 0  # 0 = heure, 1 = température/humidité, 2 = lumière, 3 = son
 sound_threshold = 50  # Seuil de déclenchement de l'alarme sonore (valeur par défaut)
 luminosity_threshold = 60  # Seuil de luminosité pour activer le relais (valeur par défaut)
+force_relay = 0 # Variable de forcage de l etat du relais par l'utilisateur
+state_relay = 0
 
 # HTU21D
 HTU21D_I2C_ADDRESS = 0x40
@@ -183,27 +190,41 @@ def button_handler():
 
     press_time = time.time()
     while button.is_pressed:
-        if (time.time() - press_time > 3):  # Appui long
-            running = False
+        if (time.time() - press_time > 5) and not running:  # Appui long de 5 secondes pour redémarrer le système
+            running = True
+            time.sleep(0.3)
             pwm.stop()
+            led_ihm.on()
+            display_text("System ON")
+            startup_animation()
+            update_display()
+            threading.Thread(target=update_display_and_leds, daemon=True).start() # thread de mise à jour der l'écran et des leds
+            threading.Thread(target=send_data, daemon=True).start() # thread envoi des données à la BDD
+            threading.Thread(target= run_flask_app, daemon=True).start() # Thread serveur flask sur le port 5000!
+            break
+        elif (time.time() - press_time > 3) and running:  # Appui long de 3 secondes pour éteindre le système
+            running = False
+            time.sleep(0.3)
+            pwm.stop()
+            fade_leds()
             led_ihm.off()
             display_text("System OFF")
-            fade_leds()
-
+            break
 
     # Changement de mode si appui court
-    mode = (mode + 1) % 4
-    update_display()
+    if running:
+        mode = (mode + 1) % 4
+        update_display()
 
 # Fonction de mise à jour de l'affichage et des LEDs
 def update_display_and_leds():
-    global sound_threshold, luminosity_threshold
+    global sound_threshold, luminosity_threshold, state_relay
     while running:
         data = read_data()
 
         if mode == 0:
             display_text(datetime.now().strftime("%H:%M:%S"))
-            color = Color(0, 255, 0)  # Vert par défaut pour température
+            color = Color(255, 255, 255)  # Blanc écran par défaut
         elif mode == 1:
             display_text(f"Temp: {data[3]:.1f}C\nHum: {data[4]:.1f}%")
             color = Color(255, 0, 0)  # Rouge pour température
@@ -233,12 +254,13 @@ def update_display_and_leds():
         else:
             pwm.stop()
 
-        if data[1]  < luminosity_threshold: # Active le relais si on est inférieur au seuil de luminosité (Lumière)
+        if (data[1]  < luminosity_threshold and force_relay == 0) or force_relay == 1 : # Active le relais si on est inférieur au seuil de luminosité (Lumière)
             relay.off()  # Activer le relais
-        else:
+            state_relay = 1
+        elif (data[1]  > luminosity_threshold and force_relay == 0) or force_relay == 2:
             relay.on()  # Désactiver le relais
+            state_relay = 0
 
-        time.sleep(1)
 
 # Fonction pour mettre à jour l'affichage en fonction du mode
 def update_display():
@@ -266,23 +288,66 @@ def fade_leds():
 
 # Animation de démarrage
 def startup_animation():
-    colors = [Color(255, 0, 0), Color(0, 255, 0), Color(0, 0, 255)]
-    for _ in range(3):
-        for color in colors:
-            strip.setPixelColor(0, color)
-            strip.setPixelColor(1, color)
-            strip.show()
-            time.sleep(0.5)
-    strip.setPixelColor(0, Color(0, 0, 0))
-    strip.setPixelColor(1, Color(0, 0, 0))
-    strip.show()
+    for brightness in range(0, 256, 5):  # Inverse de l'original : on commence à 0 et on monte jusqu'à 255
+        color = Color(brightness, brightness, brightness)
+        strip.setPixelColor(0, color)
+        strip.setPixelColor(1, color)
+        strip.show()
+        time.sleep(0.05)
+
+# Fonction lancement de flask sur le port 5000
+def run_flask_app():
+    app.run(host='0.0.0.0', port=5000)
+
+# Flask 
+@app.route('/update_thresholds', methods=['POST']) 
+def update_thresholds():
+    global sound_threshold, luminosity_threshold
+    data = request.get_json()  # Récupère les données JSON
+    sound_threshold = int(data.get('sound_threshold', 0))  # Défaut à 0 si la clé n'existe pas ou si la conversion échoue
+    luminosity_threshold = int(data.get('luminosity_threshold', 0))  # Défaut à 0 si la clé n'existe pas ou si la conversion échoue
+    #print(f"new seuil son: {sound_threshold}, new seuil lumière: {luminosity_threshold}") #DEBUG
+    return '', 200
+
+@app.route('/get_thresholds') 
+def fetch_thresholds():
+    global sound_threshold, luminosity_threshold
+    return jsonify({'sound_threshold': sound_threshold, 'luminosity_threshold': luminosity_threshold})
+
+
+@app.route('/force_relay_on', methods=['POST']) # Force le relay à on 
+def force_relay_on():
+    global force_relay
+    force_relay = 1
+    return '', 200  # Ajout d'une réponse vide avec un code 200 pour signaler que tout s'est bien passé.
+
+@app.route('/force_relay_off', methods=['POST']) # Force le relay à on 
+def force_relay_of():
+    global force_relay
+    force_relay = 2
+    return '', 200  # Ajout d'une réponse vide avec un code 200 pour signaler que tout s'est bien passé.
+
+@app.route('/unforce_relay', methods=['POST']) # Force le relay à on 
+def unforce_relay():
+    global force_relay  
+    force_relay = 0
+    return '', 200  # Ajout d'une réponse vide avec un code 200 pour signaler que tout s'est bien passé.
+
+@app.route('/get-state-relay') # Force le relay à on 
+def get_state_relay():
+    global state_relay 
+    return jsonify({'state_relay' : state_relay})
+
+
+
 
 # Détection des interruptions du bouton
-button.when_pressed = button_handler
+button.when_pressed = button_handler # interruption avec lib gpiozero
 
 # Lancement des threads pour l'affichage et l'envoi de données
-threading.Thread(target=update_display_and_leds, daemon=True).start()
-threading.Thread(target=send_data, daemon=True).start()
+threading.Thread(target=update_display_and_leds, daemon=True).start() # thread de mise à jour der l'écran et des leds
+threading.Thread(target=send_data, daemon=True).start() # thread envoi des données à la BDD
+threading.Thread(target= run_flask_app, daemon=True).start() # Thread serveur flask sur le port 5000!
 
 # Animation de démarrage
 startup_animation()

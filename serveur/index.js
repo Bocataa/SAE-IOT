@@ -14,7 +14,7 @@ const port = 3000;
 
 app.use(cors()); // Pas de restriction d'origine
 
-// Vérifier si la base de données existe, sinon la créer
+// Vérifier si la base de données existe, sinon la créer 
 if (!fs.existsSync(dbpath)) {
     console.log('La base de données n\'existe pas. Création de la base de données...');
     const db = new sqlite3.Database(dbpath, (err) => {
@@ -27,7 +27,7 @@ if (!fs.existsSync(dbpath)) {
     });
 }
 
-app.get('/all', (req, res) => {
+app.get('/all', (req, res) => { // Récupère toutes les valeurs de la BDD !! BUG SI TROP DE DONNEES !!
     const db = new sqlite3.Database(dbname);
     const requete_user = req.query;
     
@@ -49,7 +49,7 @@ app.get('/all', (req, res) => {
     });
 });
 
-app.get('/LastValue', (req, res) => {
+app.get('/LastValue', (req, res) => { // Récupère la valeur avec le plus grand id (tuples le plus recent)
     const db = new sqlite3.Database(dbname);
     const requete_user = req.query;
     
@@ -72,7 +72,7 @@ app.get('/LastValue', (req, res) => {
 });
 
 
-app.get('/fiveLastValue', (req, res) => {
+app.get('/fiveLastValue', (req, res) => { // Récupere les 5 tuples les plus récents
     const db = new sqlite3.Database(dbname);
     const requete_user = req.query;
     

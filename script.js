@@ -4,12 +4,13 @@ let humidite = [];
 let luminosite = [];
 let son = [];
 let fumee = [];
-let alerte = [];
 
 let tempData = []; // Pour graphique
 let humData = []; // Pour Graphique
 let lightData = []; //Pour Graphique
+let stateRelais;
 
+/* DEBUG
 // Fonction fetch all data attention sensible à utiliser quand trop de valeurs dans la base
 async function fetchAllData() {
     const reponse = await fetch("http://192.168.1.28:3000/all");
@@ -19,7 +20,7 @@ async function fetchAllData() {
 
 // Fonction fetch 5 dernières valeurs (affichage tableau)
 async function LastValue() {
-    const reponse = await fetch("http://192.168.1.28:3000/LastValue");
+    const reponse = await fetch("http://192.168.1.25:3000/LastValue");
     const valeur_JSON = await reponse.json();
 
     // Extraction des données de la BDD première valeur
@@ -28,14 +29,17 @@ async function LastValue() {
     luminosite[0] = valeur_JSON[0].light_level;
     son[0] = valeur_JSON[0].audio_level;
     fumee[0] = valeur_JSON[0].smoke_presence;
-    alerte[0] = valeur_JSON[0].alerte;
     console.log(valeur_JSON); // DEBUG
-}
+} */
 
 // Fonction fetch 5 dernières valeurs (affichage tableau)
 async function fiveLast() {
-    const reponse = await fetch("http://192.168.1.28:3000/fiveLastValue");
+    const reponse = await fetch("http://192.168.1.25:3000/fiveLastValue"); // Serveur Node JS BDD
     const valeur_JSON = await reponse.json();
+
+    const reponseRelais = await fetch("http://192.168.1.25:5000/get-state-relay"); // Serveur Python Flask
+    const dataRelais = await reponseRelais.json();
+    stateRelais = dataRelais.state_relay;
 
     // Boucle pour parcourir les 5 dernières valeurs et les assigner
     for (let i = 0; i < 5; i++) {
@@ -44,13 +48,16 @@ async function fiveLast() {
         luminosite[i] = valeur_JSON[i].light_level;
         son[i] = valeur_JSON[i].audio_level;
         fumee[i] = valeur_JSON[i].smoke_presence;
-        alerte[i] = valeur_JSON[i].alerte;
     }
 
     // Mise à jour des données des graphiques
-    tempData = temperature.slice();
-    humData = humidite.slice();
-    lightData = luminosite.slice();
+    tempData = temperature.reverse(); // On utilise reverse pour inverser l'ordre des indices pour que la derniere valeur se trouve a droite du tableau
+    humData = humidite.reverse();
+    lightData = luminosite.reverse();
+
+    tempData = tempData.slice();
+    humData = humData.slice();
+    lightData = lightData.slice();
 
     // Mise à jour des graphiques
     temperatureChart.data.datasets[0].data = tempData;
@@ -65,12 +72,40 @@ async function fiveLast() {
     console.log(valeur_JSON); // DEBUG
 }
 
-// Fonction de mise à jour des dernières données mesurées page web Jauges
+// Fonction de mise à jour des dernières données mesurées page web Jauges et infos
 function UpdateData() {
     TempJG.refresh(temperature[0]); // Jauge Temperature
     HumJG.refresh(humidite[0]); // Jauge humidite
     LumJG.refresh(luminosite[0]); // Jauge Luminosité
     SonJG.refresh(son[0]); // Jauge Son
+    
+    let gazStatus = document.getElementById("gasStatus");
+    let relaisStatus = document.getElementById("relaisStatus");
+
+    if (fumee[0] == 0) {
+        smokeInfo = "NON";
+        gazStatus.classList.remove("gas-danger");
+        gazStatus.classList.add("gas-safe"); // Ajoute le fond vert
+    } else {
+        smokeInfo = "OUI";
+        gazStatus.classList.remove("gas-safe");
+        gazStatus.classList.add("gas-danger"); // Ajoute le fond rouge
+    }
+
+    if (stateRelais == 1){
+        relaisInfo = "ON"
+        relaisStatus.classList.remove('gas-danger');
+        relaisStatus.classList.add('gas-safe');
+    }
+    else{
+        relaisInfo = "OFF"
+        relaisStatus.classList.remove('gas-safe');
+        relaisStatus.classList.add('gas-danger');
+    }
+
+    gazStatus.innerHTML = smokeInfo;
+    relaisStatus.innerHTML = relaisInfo;
+
 }
 
 // Affichage des jauges

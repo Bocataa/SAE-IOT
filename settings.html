@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BOOK SENSOR - Paramètres</title>
     <link id="themeStylesheet" rel="stylesheet" href="style.css">
-    <script src="raphael-2.1.4.min.js"></script>
-    <script src="justgage.js"></script>
-    <script src="script.js" defer></script>
+    <script src="settings.js" defer></script>
     <style>
         .btn-red {
             background-color: red;
@@ -52,6 +50,26 @@
             padding: 8px;
             font-size: 16px;
         }
+
+        .status-light {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        .status-on {
+            background-color: green;
+        }
+
+        .status-off {
+            background-color: red;
+        }
+
+        .threshold-display {
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -86,67 +104,54 @@
                     <button id="acButton" class="btn">Activer climatisation</button>
                 </div>
                 <div class="settings-box">
-                    <h3>Réglage de la luminosité</h3>
+                    <h3>Réglage de la luminosité minimale</h3>
                     <input type="range" id="lightSlider" min="0" max="100" value="50">
                     <p>Luminosité: <span id="lightValue">50%</span></p>
+                    <div class="threshold-display">
+                        Seuil actuel: <span id="currentLightThreshold">50%</span>
+                    </div>
                 </div>
                 <div class="settings-box">
-                    <h3>Seuil du niveau sonore</h3>
+                    <h3>Seuil du niveau sonore maximal</h3>
                     <input type="range" id="soundThresholdSlider" min="0" max="100" value="50">
                     <p>Seuil sonore: <span id="soundThresholdValue">50%</span></p>
+                    <div class="threshold-display">
+                        Seuil actuel: <span id="currentSoundThreshold">50%</span>
+                    </div>
+                    <button id="sendThresholdsButton" class="btn">Envoyer les seuils</button>
+                </div>
+                <div class="settings-box">
+                    <h3>Contrôle du Relais</h3>
+                    <button id="forceRelayOnButton" class="btn">Forcer l'état du relais à ON</button>
+                    <button id="forceRelayOffButton" class="btn">Forcer l'état du relais à OFF</button>
+                    <button id="unforceRelayButton" class="btn">Mode automatique du relais</button>
+                    <br>
+                    <span>État du relais : &nbsp;<span id="relayStatus" class="status-light status-off"></span></span>
                 </div>
             </div>
-            <div class="gauge-container">
-                <div id="maMesure"></div>
-            </div>
         </div>
 
-        <div class="alert-box">
-            <h3>Alerte</h3>
-            <p>Nombre d'alertes : <span id="alertCount">0</span></p>
-            <button id="alertButton" class="btn-red">Déclencher alerte</button>
-        </div>
     </main>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const themeSelect = document.getElementById("themeSelect");
-            const themeStylesheet = document.getElementById("themeStylesheet");
-
-
-
-            themeSelect.addEventListener("change", function () {
-                const selectedTheme = this.value;
-                themeStylesheet.href = selectedTheme;
-                localStorage.setItem("selectedTheme", selectedTheme);
-            });
-        });
-        document.getElementById("themeSelect").addEventListener("change", function () {
-            document.getElementById("themeStylesheet").setAttribute("href", this.value);
-        });
-
-        document.getElementById("lightSlider").addEventListener("input", function () {
-            document.getElementById("lightValue").innerText = this.value + "%";
-        });
-
-        document.getElementById("soundThresholdSlider").addEventListener("input", function () {
-            document.getElementById("soundThresholdValue").innerText = this.value + "%";
-        });
-        let alertCount = 0;
-        document.getElementById("alertButton").addEventListener("click", function () {
-            alertCount++;
-            document.getElementById("alertCount").innerText = alertCount;
-        });
-        document.getElementById("heaterButton").addEventListener("click", function () {
-            alert("Chauffage activé");
-        });
-
-        document.getElementById("acButton").addEventListener("click", function () {
-            alert("Climatisation activée");
-        });
-
-
-    </script>
 </body>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    const themeSelect = document.getElementById("themeSelect");
+    const themeStylesheet = document.getElementById("themeStylesheet");})
+
+    themeSelect.addEventListener("change", function () {
+        const selectedTheme = this.value;
+        themeStylesheet.href = selectedTheme;
+        localStorage.setItem("selectedTheme", selectedTheme);
+    });
+
+    document.getElementById("heaterButton").addEventListener("click", function () {
+        alert("Chauffage activé");
+    });
+
+    document.getElementById("acButton").addEventListener("click", function () {
+        alert("Climatisation activée");
+    });
+</script>
 
 </html>

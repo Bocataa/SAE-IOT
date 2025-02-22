@@ -70,3 +70,26 @@ body {
     align-items: center;
     padding: 30px;
 }
+
+/* Conteneur principal du statut de gaz */
+#gasStatus, #relaisStatus {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    padding: 15px;
+    border-radius: 8px;
+    width: 100%;
+    transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+}
+
+/* Fond vert si pas de gaz */
+.gas-safe {
+    background-color: #3da728; /* Vert */
+    color: white;;
+}
+
+/* Fond rouge si présence de gaz */
+.gas-danger {
+    background-color: #dc3545; /* Rouge */
+    color: white;
+}
