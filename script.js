@@ -33,11 +33,11 @@ async function LastValue() {
 } */
 
 // Fonction fetch 5 dernières valeurs (affichage tableau)
-async function fiveLast() {
+async function fetchData() {
     const reponse = await fetch("http://192.168.1.25:3000/fiveLastValue"); // Serveur Node JS BDD
     const valeur_JSON = await reponse.json();
 
-    const reponseRelais = await fetch("http://192.168.1.25:5000/get-state-relay"); // Serveur Python Flask
+    const reponseRelais = await fetch("http://192.168.1.25:5000/get_state_relay"); // Serveur Python Flask
     const dataRelais = await reponseRelais.json();
     stateRelais = dataRelais.state_relay;
 
@@ -295,5 +295,5 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-setInterval(fiveLast, 2000);
+setInterval(fetchData, 2000);
 setInterval(UpdateData, 500);

@@ -13,7 +13,7 @@ async function ForceOnRelay() {
             'Content-Type': 'application/json'
         }
     };
-    await fetch("http://192.168.1.25:5000/force_relay_on", request);  // Envoie au serveur Flask pour appeler ROS2
+    await fetch("http://192.168.1.25:5000/force_relay_on", request);  
     fetchStateRelay();  // Mise à jour immédiate de l'état du relais
 }
 
@@ -24,7 +24,7 @@ async function ForceOffRelay() {
             'Content-Type': 'application/json'
         }
     };
-    await fetch("http://192.168.1.25:5000/force_relay_off", request);  // Envoie au serveur Flask pour appeler ROS2
+    await fetch("http://192.168.1.25:5000/force_relay_off", request);  
     fetchStateRelay();  // Mise à jour immédiate de l'état du relais
 }
 
@@ -35,12 +35,23 @@ async function UnforceRelay() {
             'Content-Type': 'application/json'
         }
     };
-    await fetch("http://192.168.1.25:5000/unforce_relay", request);  // Envoie au serveur Flask pour appeler ROS2
+    await fetch("http://192.168.1.25:5000/unforce_relay", request); 
     fetchStateRelay();  // Mise à jour immédiate de l'état du relais
 }
 
+async function ToggleBPIHM() {
+    const request = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+    await fetch("http://192.168.1.25:5000/toggle_BP_IHM", request);  
+    fetchStateSystem();  // Mise à jour immédiate de l'état du System
+}
+
 async function fetchStateRelay() {
-    const response = await fetch("http://192.168.1.25:5000/get-state-relay"); // adresse local pour le moment à modifier plus tard
+    const response = await fetch("http://192.168.1.25:5000/get_state_relay"); // adresse local pour le moment à modifier plus tard
     const data = await response.json();
     const state_relay = data.state_relay;
     const relayStatusElement = document.getElementById("relayStatus")
@@ -52,6 +63,22 @@ async function fetchStateRelay() {
     else{
         relayStatusElement.classList.remove('status-on');
         relayStatusElement.classList.add('status-off');
+    }
+}
+
+async function fetchStateSystem() {
+    const response = await fetch("http://192.168.1.25:5000/get_running_state"); // adresse local pour le moment à modifier plus tard
+    const data = await response.json();
+    const state_sys = data.running_state;
+    const SystemStatusElement = document.getElementById("SystemStatus")
+
+    if (state_sys == 1){
+        SystemStatusElement.classList.remove('status-off');
+        SystemStatusElement.classList.add('status-on');
+    }
+    else{
+        SystemStatusElement.classList.remove('status-on');
+        SystemStatusElement.classList.add('status-off');
     }
 }
 
@@ -97,6 +124,8 @@ async function updateThresholds(lightThreshold, soundThreshold) {
 document.getElementById("forceRelayOnButton").addEventListener("click", ForceOnRelay);
 document.getElementById("forceRelayOffButton").addEventListener("click", ForceOffRelay);
 document.getElementById("unforceRelayButton").addEventListener("click", UnforceRelay);
+document.getElementById("SystemStateButton").addEventListener("click", ToggleBPIHM);
 
 setInterval(fetchThresholds, 1000)
 setInterval(fetchStateRelay, 1000)
+setInterval(fetchStateSystem, 1000)

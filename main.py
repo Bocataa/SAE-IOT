@@ -70,7 +70,7 @@ oled.show()
 # Variables globales
 running = True
 mode = 0  # 0 = heure, 1 = température/humidité, 2 = lumière, 3 = son
-sound_threshold = 50  # Seuil de déclenchement de l'alarme sonore (valeur par défaut)
+sound_threshold = 70  # Seuil de déclenchement de l'alarme sonore (valeur par défaut)
 luminosity_threshold = 60  # Seuil de luminosité pour activer le relais (valeur par défaut)
 force_relay = 0 # Variable de forcage de l etat du relais par l'utilisateur
 state_relay = 0
@@ -304,6 +304,29 @@ def run_flask_app():
     app.run(host='0.0.0.0', port=5000)
 
 # Flask 
+@app.route('/toggle_BP_IHM', methods=['POST'])
+def Virtual_button_handler(): # Fonction de gestion BP IHM Virtuel
+    global running
+    if not running:  # Appui long de 5 secondes pour redémarrer le système
+        running = True
+        time.sleep(0.3)
+        pwm.stop()
+        startup_animation()
+        led_ihm.on()
+        display_text("System ON")
+        update_display()
+        threading.Thread(target=update_display_and_leds, daemon=True).start() # thread de mise à jour der l'écran et des leds
+        threading.Thread(target=send_data, daemon=True).start() # thread envoi des données à la BDD
+        threading.Thread(target= run_flask_app, daemon=True).start() # Thread serveur flask sur le port 5000!
+    elif running:  # Appui long de 3 secondes pour éteindre le système
+        running = False
+        time.sleep(0.3)
+        pwm.stop()
+        fade_leds()
+        led_ihm.off()
+        display_text("System OFF")
+    return '', 200 # retourne rien juste code 200 = succès
+
 @app.route('/update_thresholds', methods=['POST']) 
 def update_thresholds():
     global sound_threshold, luminosity_threshold
@@ -317,6 +340,11 @@ def update_thresholds():
 def fetch_thresholds():
     global sound_threshold, luminosity_threshold
     return jsonify({'sound_threshold': sound_threshold, 'luminosity_threshold': luminosity_threshold})
+
+@app.route('/get_running_state') 
+def fetch_running_state():
+    global running
+    return jsonify({'running_state': running})
 
 
 @app.route('/force_relay_on', methods=['POST']) # Force le relay à on 
@@ -337,7 +365,7 @@ def unforce_relay():
     force_relay = 0
     return '', 200  # Ajout d'une réponse vide avec un code 200 pour signaler que tout s'est bien passé.
 
-@app.route('/get-state-relay') # Force le relay à on 
+@app.route('/get_state_relay') # Retourne l'état actuel du relais
 def get_state_relay():
     global state_relay 
     return jsonify({'state_relay' : state_relay})
