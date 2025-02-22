@@ -194,9 +194,9 @@ def button_handler():
             running = True
             time.sleep(0.3)
             pwm.stop()
+            startup_animation()
             led_ihm.on()
             display_text("System ON")
-            startup_animation()
             update_display()
             threading.Thread(target=update_display_and_leds, daemon=True).start() # thread de mise à jour der l'écran et des leds
             threading.Thread(target=send_data, daemon=True).start() # thread envoi des données à la BDD
@@ -227,19 +227,23 @@ def update_display_and_leds():
             color = Color(255, 255, 255)  # Blanc écran par défaut
         elif mode == 1:
             display_text(f"Temp: {data[3]:.1f}C\nHum: {data[4]:.1f}%")
-            color = Color(255, 0, 0)  # Rouge pour température
         elif mode == 2:
             display_text(f"Lum: {data[1]:.2f}%")
-            color = Color(0, 0, 255)  # Bleu pour lumière
         elif mode == 3:
             display_text(f"Son: {data[0]:.2f}%")
-            color = Color(255, 255, 0)  # Jaune pour son
 
         # Mise à jour de la bande LED en fonction des niveaux
         if mode == 1:
-            color = Color(int(data[3] * 2.55), 0, int(255 - data[3] * 2.55))  # Dégradé rouge-bleu pour température
+            if (data[3] <= 18):
+                color = Color(255-int(255 * (data[3]/18)), 255-int(255 * (data[3]/18)), 255) # si froid bleu produit en croix n/18 (car 18 est le max) donne un coeff pour variance de bleu plus clair vers le froid
+            elif (data[3] > 18) and (data[3] <= 25):
+                color = Color(255-int(255 * (data[3]/25)), 255, 0) #variance de vert qui tend vers le jaune
+            elif (data[3] > 25):
+                color = Color(255, 255-int((255 * data[3]/60)), 255-int((255 * data[3]/60)))  # Variance de orange à Rouge on fixe le max à 60
         elif mode == 2:
-            color = Color(0, int(data[4] * 2.55), int(255 - data[4] * 2.55))  # Dégradé vert-bleu pour humidité
+            color = Color(int(255*data[1]/100), int(255*data[1]/100), 0) # Jaune plus ou moins éclairé
+        elif mode == 2:
+            color = Color(int(233*data[0]/100), int(39*data[0]/100), int(249*data[0]/100))  # violet plus ou moins éclairé  
 
         # Mise à jour de la bande LED
         strip.setPixelColor(0, color)

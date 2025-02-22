@@ -258,7 +258,7 @@ document.addEventListener("DOMContentLoaded", function() {
     window.temperatureChart = new Chart(ctxTemp, {
         type: "line",
         data: {
-            labels: ["1", "2", "3", "4", "5"], // Labels fixes pour l'exemple
+            labels: ["-8", "-6", "-4", "-2", "0 s"], // Labels fixes pour l'exemple
             datasets: [{
                 label: "Température",
                 data: tempData, // Données stockées
@@ -271,7 +271,7 @@ document.addEventListener("DOMContentLoaded", function() {
     window.humidityChart = new Chart(ctxHum, {
         type: "line",
         data: {
-            labels: ["1", "2", "3", "4", "5"], // Labels fixes pour l'exemple
+            labels: ["-8", "-6", "-4", "-2", "0 s"], // Labels fixes pour l'exemple
             datasets: [{
                 label: "Humidité",
                 data: humData, // Données stockées
@@ -284,7 +284,7 @@ document.addEventListener("DOMContentLoaded", function() {
     window.lightChart = new Chart(ctxLight, {
         type: "line",
         data: {
-            labels: ["1", "2", "3", "4", "5"], // Labels fixes pour l'exemple
+            labels: ["-8", "-6", "-4", "-2", "0 s"], // Labels fixes pour l'exemple
             datasets: [{
                 label: "Luminosité",
                 data: lightData, // Données stockées
@@ -295,5 +295,5 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-setInterval(fiveLast, 3000);
+setInterval(fiveLast, 2000);
 setInterval(UpdateData, 500);
