@@ -1,3 +1,7 @@
+/*
+ENZO PERRIER - LOUAN BIEGEL
+https://github.com/Bocataa/SAE-IOT
+*/
 const sqlite3 = require('sqlite3');
 const express = require("express");
 const cors = require("cors"); // Pour autoriser les requêtes de l'extérieur

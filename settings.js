@@ -1,3 +1,7 @@
+/*
+ENZO PERRIER - LOUAN BIEGEL
+https://github.com/Bocataa/SAE-IOT
+*/
 document.getElementById("lightSlider").addEventListener("input", function () {
     document.getElementById("lightValue").innerText = this.value + "%";
 });
@@ -13,7 +17,7 @@ async function ForceOnRelay() {
             'Content-Type': 'application/json'
         }
     };
-    await fetch("http://192.168.1.25:5000/force_relay_on", request);  
+    await fetch("http://booksensor:5000/force_relay_on", request);  // On utilise l'hostname, c'est plus simple
     fetchStateRelay();  // Mise à jour immédiate de l'état du relais
 }
 
@@ -24,18 +28,20 @@ async function ForceOffRelay() {
             'Content-Type': 'application/json'
         }
     };
-    await fetch("http://192.168.1.25:5000/force_relay_off", request);  
+    await fetch("http://booksensor:5000/force_relay_off", request);  
     fetchStateRelay();  // Mise à jour immédiate de l'état du relais
 }
 
+// Définition d'une fonction asynchrone UnforceRelay
 async function UnforceRelay() {
     const request = {
-        method: 'POST',
+        method: 'POST', // Méthode HTTP utilisée pour la requête, ici POST
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json' // Déclare que le corps de la requête sera en JSON
         }
     };
-    await fetch("http://192.168.1.25:5000/unforce_relay", request); 
+    // Envoie une requête POST à l'URL spécifiée avec l'objet 'request' comme configuration
+    await fetch("http://booksensor:5000/unforce_relay", request); 
     fetchStateRelay();  // Mise à jour immédiate de l'état du relais
 }
 
@@ -46,12 +52,12 @@ async function ToggleBPIHM() {
             'Content-Type': 'application/json'
         }
     };
-    await fetch("http://192.168.1.25:5000/toggle_BP_IHM", request);  
+    await fetch("http://booksensor:5000/toggle_BP_IHM", request);  
     fetchStateSystem();  // Mise à jour immédiate de l'état du System
 }
 
 async function fetchStateRelay() {
-    const response = await fetch("http://192.168.1.25:5000/get_state_relay"); // adresse local pour le moment à modifier plus tard
+    const response = await fetch("http://booksensor:5000/get_state_relay"); // adresse local pour le moment à modifier plus tard
     const data = await response.json();
     const state_relay = data.state_relay;
     const relayStatusElement = document.getElementById("relayStatus")
@@ -67,7 +73,7 @@ async function fetchStateRelay() {
 }
 
 async function fetchStateSystem() {
-    const response = await fetch("http://192.168.1.25:5000/get_running_state"); // adresse local pour le moment à modifier plus tard
+    const response = await fetch("http://booksensor:5000/get_running_state"); // adresse local pour le moment à modifier plus tard
     const data = await response.json();
     const state_sys = data.running_state;
     const SystemStatusElement = document.getElementById("SystemStatus")
@@ -83,7 +89,7 @@ async function fetchStateSystem() {
 }
 
 async function fetchThresholds() {
-    const response = await fetch("http://192.168.1.25:5000/get_thresholds"); // adresse local pour le moment à modifier plus tard
+    const response = await fetch("http://booksensor:5000/get_thresholds"); // adresse local pour le moment à modifier plus tard
     const data = await response.json();
     //console.log("Données reçues du serveur:", data); // DEBUG
 
@@ -105,7 +111,7 @@ document.getElementById("sendThresholdsButton").addEventListener("click", async 
 
 async function updateThresholds(lightThreshold, soundThreshold) {
         // Envoi d'un seul objet contenant les deux valeurs
-        const response = await fetch('http://192.168.1.25:5000/update_thresholds', {
+        const response = await fetch('http://booksensor:5000/update_thresholds', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',  // Indiquer que le corps de la requête est en JSON

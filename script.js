@@ -1,3 +1,8 @@
+/*
+ENZO PERRIER - LOUAN BIEGEL
+https://github.com/Bocataa/SAE-IOT
+*/
+
 // Variables globales
 let temperature = [];
 let humidite = [];
@@ -34,10 +39,10 @@ async function LastValue() {
 
 // Fonction fetch 5 dernières valeurs (affichage tableau)
 async function fetchData() {
-    const reponse = await fetch("http://192.168.1.25:3000/fiveLastValue"); // Serveur Node JS BDD
+    const reponse = await fetch("http://booksensor:3000/fiveLastValue"); // Serveur Node JS BDD
     const valeur_JSON = await reponse.json();
 
-    const reponseRelais = await fetch("http://192.168.1.25:5000/get_state_relay"); // Serveur Python Flask
+    const reponseRelais = await fetch("http://booksensor:5000/get_state_relay"); // Serveur Python Flask
     const dataRelais = await reponseRelais.json();
     stateRelais = dataRelais.state_relay;
 

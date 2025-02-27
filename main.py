@@ -1,3 +1,6 @@
+#ENZO PERRIER - LOUAN BIEGEL
+#https://github.com/Bocataa/SAE-IOT
+
 from flask import Flask, render_template, request, jsonify # serveur Flask pour gérer les paramètres utilisateur
 from flask_cors import CORS # évite les erreurs cross origine
 from gpiozero import Button, LED, DigitalOutputDevice # Utilisation des gpio
